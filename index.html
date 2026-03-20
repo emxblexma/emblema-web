@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emblema Studio</title>
+
+  <!-- Three.js for GLB rendering -->
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Fallback display font while Knight loads -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── CUSTOM FONTS ── */
+    @font-face {
+      font-family: 'Knight';
+      src: url('assets/fonts/Knight otf.otf') format('opentype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Flome';
+      src: url('assets/fonts/Flome Regular.otf') format('opentype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Schibsted Grotesk';
+      src: url('assets/fonts/SchibstedGrotesk-VariableFont_wght.ttf') format('truetype');
+      font-weight: 100 900; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Schibsted Grotesk';
+      src: url('assets/fonts/SchibstedGrotesk-Italic-VariableFont_wght.ttf') format('truetype');
+      font-weight: 100 900; font-style: italic; font-display: swap;
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:           #1e1e1e;
+      --hero-bg:      #141414;
+      --border:       rgba(255,255,255,0.11);
+      --text:         #f2f0ed;
+      --muted:        rgba(242,240,237,0.38);
+      --pill-active:  #f2f0ed;
+      --font-display: 'Knight', 'Abril Fatface', Georgia, serif;
+      --font-ui:      'Schibsted Grotesk', -apple-system, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-weight: 400;
+      overflow-x: hidden;
+    }
+
+    /* ════════════════════════════
+       PAGE SHELL
+    ════════════════════════════ */
+    .page {
+      min-height: 100vh;
+      padding: 18px 22px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ════════════════════════════
+       NAVBAR
+    ════════════════════════════ */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      height: 52px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .nav-logo img {
+      height: 42px;
+      width: auto;
+      display: block;
+    }
+
+    .nav-locations {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1px;
+    }
+    .nav-locations span {
+      font-size: 0.64rem;
+      font-weight: 500;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .nav-cta {
+      flex-shrink: 0;
+      background: var(--text);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 100px;
+      padding: 11px 28px;
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .nav-cta:hover { background: #fff; transform: scale(1.02); }
+
+    /* ════════════════════════════
+       HERO
+    ════════════════════════════ */
+    .hero {
+      flex: 1;
+      position: relative;
+      background:
+        url('assets/images/gradients/gradient-purple.png') center center / cover no-repeat;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      min-height: 540px;
+    }
+
+    /* dark overlay — keeps text readable */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background: rgba(10, 8, 18, 0.72);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HERO TITLE ── */
+    .hero-title {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 32px 0 0 40px;
+      z-index: 2;
+      line-height: 0.88;
+      user-select: none;
+    }
+
+    .hero-title-line {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(4.5rem, 12.5vw, 17rem);
+      font-weight: normal;
+      letter-spacing: -0.025em;
+      text-transform: uppercase;
+      color: var(--text);
+      animation: titleReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .hero-title-line:nth-child(1) { animation-delay: 0.15s; }
+    .hero-title-line:nth-child(2) { animation-delay: 0.25s; }
+
+    @keyframes titleReveal {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TAGLINE ── */
+    .hero-tagline {
+      position: absolute;
+      bottom: 36px;
+      left: 40px;
+      z-index: 2;
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      line-height: 1.6;
+      animation: fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
+    }
+
+    /* ════════════════════════════
+       3D MODEL VIEWER
+    ════════════════════════════ */
+    .hero-model {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 52%;
+      height: 100%;
+      z-index: 3;
+      --poster-color: transparent;
+      background: transparent;
+      animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+    }
+
+    .hero-model canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ════════════════════════════
+       BOTTOM NAV
+    ════════════════════════════ */
+    .bottom-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 0 4px;
+      animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+    }
+
+    .bottom-nav-track {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 100px;
+      padding: 5px;
+    }
+
+    .pill {
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      padding: 10px 34px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.12s;
+      color: rgba(242,240,237,0.45);
+      background: transparent;
+    }
+    .pill:hover:not(.active) {
+      color: rgba(242,240,237,0.70);
+      background: rgba(255,255,255,0.05);
+    }
+    .pill:active { transform: scale(0.97); }
+
+    .pill.active {
+      background: var(--pill-active);
+      color: #1a1a1a;
+    }
+
+    /* gradient text on active pill */
+    .pill.active .pill-word-1 {
+      background: linear-gradient(90deg, #3d5cf5, #7c3cf5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pill.active .pill-word-2 {
+      background: linear-gradient(90deg, #7c3cf5, #c040a0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ════════════════════════════
+       SHARED ANIMATIONS
+    ════════════════════════════ */
+    .navbar { animation: fadeDown 0.65s cubic-bezier(0.22,1,0.36,1) 0s both; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ════════════════════════════
+       RESPONSIVE
+    ════════════════════════════ */
+    @media (max-width: 700px) {
+      .page { padding: 12px; gap: 10px; }
+      .nav-locations { display: none; }
+      .hero-title { padding: 24px 0 0 24px; }
+      .hero-tagline { left: 24px; bottom: 24px; }
+      .hero-model { width: 55%; }
+      .pill { padding: 10px 20px; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══ NAVBAR ═══ -->
+  <nav class="navbar">
+    <a href="#" class="nav-logo">
+      <img src="assets/images/logo/logo_firulete.gif" alt="Emblema" />
+    </a>
+
+    <div class="nav-locations">
+      <span>Amsterdam, Netherlands</span>
+      <span>Bologna, Italy</span>
+    </div>
+
+    <button class="nav-cta">Let's Talk</button>
+  </nav>
+
+  <!-- ═══ HERO ═══ -->
+  <main class="hero">
+
+    <!-- Big title -->
+    <h1 class="hero-title">
+      <span class="hero-title-line">Emblema</span>
+      <span class="hero-title-line">Studio</span>
+    </h1>
+
+    <!-- Tagline -->
+    <p class="hero-tagline">
+      [WE CRAFT ALL-ROUND<br>DESIGN SOLUTIONS]
+    </p>
+
+    <!-- 3D Model -->
+    <div id="wizard-viewer" class="hero-model"></div>
+
+  </main>
+
+  <!-- ═══ BOTTOM NAV ═══ -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-track">
+      <button class="pill" onclick="setActive(this)">Work</button>
+      <button class="pill active" onclick="setActive(this)">
+        <span class="pill-word-1">Start</span> <span class="pill-word-2">Project</span>
+      </button>
+      <button class="pill" onclick="setActive(this)">Fun</button>
+    </div>
+  </nav>
+
+</div>
+
+<script>
+  function setActive(el) {
+    el.closest('.bottom-nav-track')
+      .querySelectorAll('.pill')
+      .forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  (function () {
+    const container = document.getElementById('wizard-viewer');
+
+    // Renderer — transparent background
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    container.appendChild(renderer.domElement);
+
+    // Scene (no background color → transparent)
+    const scene = new THREE.Scene();
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(
+      42,
+      container.clientWidth / container.clientHeight,
+      0.01,
+      100
+    );
+    camera.position.set(0, 0.6, 3.2);
+
+    // Lighting — warm white key + lavender fill to flatter pink/lavender model
+    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+    scene.add(ambient);
+
+    const keyLight = new THREE.DirectionalLight(0xfff5f8, 2.0);
+    keyLight.position.set(2, 5, 4);
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xc8a0ff, 0.6);
+    fillLight.position.set(-3, 2, -2);
+    scene.add(fillLight);
+
+    // OrbitControls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.2;
+    controls.minDistance = 1.2;
+    controls.maxDistance = 8;
+
+    // Resume auto-rotate 2s after user stops interacting
+    let resumeTimer;
+    renderer.domElement.addEventListener('pointerdown', () => {
+      controls.autoRotate = false;
+      clearTimeout(resumeTimer);
+    });
+    renderer.domElement.addEventListener('pointerup', () => {
+      resumeTimer = setTimeout(() => { controls.autoRotate = true; }, 2000);
+    });
+
+    // Load GLB
+    const loader = new THREE.GLTFLoader();
+    loader.load('assets/3d/wizard.glb', function (gltf) {
+      const model = gltf.scene;
+
+      // Normalise size
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 2.4 / maxDim;
+      model.scale.setScalar(scale);
+
+      // Centre model at origin, then nudge up so feet are slightly below canvas bottom
+      model.position.set(
+        -center.x * scale,
+        -center.y * scale + 0.18,
+        -center.z * scale
+      );
+
+      scene.add(model);
+
+      // Orbit around the model's visual centre
+      controls.target.set(0, 0.15, 0);
+      controls.update();
+    });
+
+    // Resize handler
+    function onResize() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    window.addEventListener('resize', onResize);
+
+    // Render loop
+    (function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    })();
+  })();
+</script>
+</body>
+</html>
